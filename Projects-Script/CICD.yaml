@@ -5,7 +5,7 @@
   vars:
     repository_url: https://github.com/KATHIRVEL-13/secretsanta-generator_devshack.git
   vars_files:
-    - docker_credentials.yml
+    - credentials.yml
   tasks:
     - name: Clone or pull repository
       ansible.builtin.git:
@@ -13,23 +13,23 @@
         dest: /home/ubuntu/secretsanta-generator_devshack
         update: yes
       register: git_result
-      
+
     - name: Check if repository was cloned or updated
       debug:
         msg: "{{ git_result }}"
-        
+
     - name: Copy shell script to remote server
       copy:
-        src: docker-container-condition.sh
-        dest: /home/ubuntu/secretsanta-generator_devshack/docker-container-condition.sh
-        
+        src: docker-condition.sh
+        dest: /home/ubuntu/secretsanta-generator_devshack/docker-condition.sh
+
     - name: Permissions on shell script
-      command: chmod +x docker-container-condition.sh
+      command: chmod +x docker-condition.sh
       args:
         chdir: /home/ubuntu/secretsanta-generator_devshack
-        
+
     - name: Execute shell script
-      command: ./docker-container-condition.sh
+      command: ./docker-condition.sh
       args:
         chdir: /home/ubuntu/secretsanta-generator_devshack
 
@@ -37,12 +37,12 @@
       command: mvn compile
       args:
         chdir: /home/ubuntu/secretsanta-generator_devshack
-        
+
     - name: Run mvn Test
       command: mvn test
       args:
         chdir: /home/ubuntu/secretsanta-generator_devshack
-        
+
     - name: Execute SonarScanner
       ansible.builtin.command:
         chdir: /home/ubuntu/secretsanta-generator_devshack
@@ -53,26 +53,26 @@
           - -Dsonar.projectKey=Santa
           - -Dsonar.projectName=Santa
           - -Dsonar.java.binaries=.
-          
+
     - name: Run mvn build
       command: mvn package
       args:
         chdir: /home/ubuntu/secretsanta-generator_devshack
-        
+
     - name: Build & Tag Docker Image
-      command: docker build -t Kathirvel13/santa:latest .
+      command: docker build -t kathirvel13/santa:latest .
       args:
         chdir: /home/ubuntu/secretsanta-generator_devshack
-        
+
     - name: Scan Docker Image
       command: trivy image --format table -o trivy-image-report.html
-        adijaiswal/santa:latest
-        
+        kathirvel13/santa:latest
+
     - name: Log in to Docker registry
       command: docker login -u {{ docker_username }} -p {{ docker_password }}
-      
+
     - name: Push Docker Image
-      command: docker push Kathirvel13/santa:latest
-      
+      command: docker push kathirvel13/santa:latest
+
     - name: Deploy To Container
-      command: docker run -d --name secret-santa -p 8080:8080 Kathirvel13/santa:latest
+      command: docker run -d --name secret-santa -p 8080:8080 kathirvel13/santa:latest
